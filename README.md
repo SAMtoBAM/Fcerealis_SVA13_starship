@@ -59,10 +59,10 @@ touch starfish_wrapper_output/starfish.elements.ann.FILTERED.feat
 
 ```bash
 ##now only want to run stargraph with the long-read assemblies
-#SVA13 = GCA054574715 
-#F2344 = GCA054553065
+SVA13="GCA054574715" 
+F2344="GCA054553065"
 
-for longread in GCA054574715 GCA054553065
+for longread in ${SVA13} ${F2344
 do
 ls Fcerealis_public_assemblies/${longread}.fa
 done > assemblies_list.LR.txt 
@@ -71,20 +71,218 @@ done > assemblies_list.LR.txt
 stargraph.sh -a assemblies_list.LR.txt -t 16 -p Fcerealis -o stargraph_output -r starfish_wrapper_output/starfish.filt.SRGs_combined.gff -e  starfish_wrapper_output/starfish.elements.ann.FILTERED.feat
 
 ```
-Raw output for a Starship in SVA13
+Raw output for a Starship in SVA13 <br/>
+Clearly the edges is a little off but we can refine that later. Captin edge of predicted element extends over aligned region, and other end extends over ~200bp of telomeric sequences. Also as we will see below the 20kb prior to the telomeres is likely not Starship Material neither.
 
 <p>
 <img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/cluster2.svg" width=100%>
 </p>
 
 
+### Step 1d: Run cargobay to find Horizontal gene transfer (currently not working as database is down)
+
+```bash
+##first need to create a metadata file that will tell cargobay which species each genome is and therefore not consider it HGT
+for longread in GCA054574715 GCA054553065
+do
+echo "${longread};Fusarium cerealis" | tr ';' '\t'
+done > cargobay_metadata.tsv
+
+cargobay.sh -t 2 -p Fcerealis -o cargobay_output -a stargraph_output/Fcerealis.assemblies.fa.gz -e stargraph_output/Fcerealis.starships_SLRs.fa -b stargraph_output/Fcerealis.starships_SLRs.bed -m cargobay_metadata.tsv -g starfish_wrapper_output/starfish.filt.SRGs_combined.gff
+
+```
 
 
+### Step 1e: Manually identify genomes with the SVA13 starship and generate alignments with Starship gene predictions
 
-### Step 1d: Run cargobay to find Horizontal gene transfer
+```bash
+##just want to extract the starship region pus some flank (can only go further downstream)
+samtools faidx stargraph_output/Fcerealis.assemblies.fa.gz $( grep $SVA13 stargraph_output/Fcerealis.starships_SLRs.bed | awk '{print $1":"$2"-"$3+20000}' ) > SVA13.GCA054574715_SLR2.20kb_flank.fa
+```
+
+Based on BLASTing NCBI we can find this element in 3 genomes of other species: <br/>
+Fusarium culmorum = GCA_052570865.1 <br/>
+Fusarium sp. = GCA_022627095.1 <br/>
+Fusarium equiseti = GCA_019055085.1
 
 ```bash
 
+candidates="GCA_052570865.1 GCA_022627095.1 GCA_019055085.1"
+
+mkdir HGT_candidates_genomes
+
+##download the assembly and protein dataset then rename it etc
+datasets download genome accession ${candidates}
+unzip ncbi_dataset.zip
+rm ncbi_dataset.zip
+##rename them as just the ncbi GCA assession and rename the contig headers with the genome name 
+ls ncbi_dataset/data/ | grep -v json | while read genome
+do
+    genome2=$( echo $genome | sed 's/_//' | awk -F "." '{print $1}')
+    cat ncbi_dataset/data/$genome/$genome*.fna | sed "s/>/>${genome2}_/g" | awk -F " " '{print $1}' | awk '{if($0 ~ ">") {print} else {print toupper($0)}}' > HGT_candidates_genomes/$genome2.fa
+done
+##clean up
+rm -r ncbi_dataset/ md5sum.txt README.md 
+
+##combine them
+cat HGT_candidates_genomes/*.fa > HGT_candidates_genomes.fa
+
+##BLAST them with the starship plus flank and extract the aligning contigs (with a minimum of 5kb alignment)
+##this gives us 1 contig per genome (as expected); and then we can aggregate the alignments to identify a large contiguous aligned region
+##and place it in a tsv
+echo "contig;start;end;size" | tr ';' '\t' > HGT_candidates_genomes.contigs.bed
+blastn -query SVA13.GCA054574715_SLR2.20kb_flank.fa -subject HGT_candidates_genomes.fa -outfmt 6  |
+awk '
+$4 >= 5000 { keep[$2]=1 }
+{
+    lines[NR]=$0
+}
+END{
+    for(i=1;i<=NR;i++){
+        split(lines[i],f,"\t")
+        if(keep[f[2]])
+            print lines[i]
+    }
+}' |
+awk '
+{
+    s=($9<$10)?$9:$10
+    e=($9>$10)?$9:$10
+    print $2"\t"s"\t"e
+}' |
+sort -k1,1 -k2,2n |
+awk -v gap=500 -v minlen=10000 '
+NR==1{
+    chr=$1; start=$2; end=$3
+    next
+}
+{
+    if($1==chr && $2-end < gap){
+        if($3>end) end=$3
+    } else {
+        if(end-start+1 >= minlen)
+            print chr"\t"start"\t"end"\t"end-start+1
+        chr=$1; start=$2; end=$3
+    }
+}
+END{
+    if(end-start+1 >= minlen)
+        print chr"\t"start"\t"end"\t"end-start+1
+}' >> HGT_candidates_genomes.contigs.bed
+
+##extract those entire contigs to a file for alignment
+##add the contig in SVA13 first for order
+samtools faidx stargraph_output/Fcerealis.assemblies.fa.gz $( grep $SVA13 stargraph_output/Fcerealis.starships_SLRs.bed | awk '{print $1}' ) > HGT_candidates_genomes.contigs.fa
+##then the others
+seqkit grep -f <(cut -f1 HGT_candidates_genomes.contigs.bed) HGT_candidates_genomes.fa >> HGT_candidates_genomes.contigs.fa
+##this file will be used for all vs all alignments
+
+##run starfish on the hGT candidate genomes to get the Starship related genes
+ls HGT_candidates_genomes/*.fa > HGT_assemblies_list.txt
+starfish_wrapper.sh -a HGT_assemblies_list.txt -t 16 -o HGT_candidates_starfish_wrapper_output
+##will use this and the SVA13 starfish run to extract the coordinates of the captain and any other starship related gene that may be present on these contigs
+
+##FIRST PLOTTING FILE (bed file with the region where alignments will be based on BLAST and some flanks, will show the lines representing the contig)
+##now add 30kb flank to the edges..if possible
+flank=30000
+
+##need to index the contigs so I get easily get the contig sizes, used to calculate max length possible for flank
+samtools faidx HGT_candidates_genomes.fa
+
+echo "contig;start;end" | tr ';' '\t' > HGT_candidates_genomes.contigs.flank.bed
+tail -n+2 HGT_candidates_genomes.contigs.bed | cut -f1-3 | while read -r contig start end
+do
+flankstart=$( echo $start | awk -v flank="$flank" '{if(($1-flank) < 0) {print "0"} else {print $1-flank}}' )
+flankend=$( grep $contig HGT_candidates_genomes.fa.fai | cut -f2 | awk -v end="$end" -v flank="$flank" '{if((end+flank) > $1){print $1} else {print end+flank}}' )
+echo "${contig};${flankstart};${flankend}" | tr ';' '\t'
+done >> HGT_candidates_genomes.contigs.flank.bed
+
+##SECOND PLOTTING FILE (alignment all vs all using nucmer converted to a paf file)
+##usually use a minmatch of 100 but reducing it to 50 as telomeric sequences are important here
+nucmer -t 16 --maxmatch --minmatch 50 --delta HGT_candidates_genomes.contigs.nucmer.delta HGT_candidates_genomes.contigs.fa HGT_candidates_genomes.contigs.fa
+paftools.js delta2paf HGT_candidates_genomes.contigs.nucmer.delta > HGT_candidates_genomes.contigs.nucmer.paf
+
+
+##THIRD PLOTTING FILE (coordinates of starship related genes in the aligned contigs)
+##first header
+echo "contig;start;end;sense;gene;label" | tr ';' '\t' > HGT_candidates_genomes.contigs.genes.bed
+##predicted starship related genes for SVA13
+cat starfish_wrapper_output/geneFinder_*/starfish.filt.gff | grep "$SVA13"  | awk '{print $1"\t"$4"\t"$5"\t"$7"\t"$9}' | tr ';' '\t' | sed 's/Name=//g' | cut -f1,2,3,4,6 | awk '{if($5 ~ "_duf3723") {print $0"\tDUF3723"} else if($5 ~ "_tyr") { print $0"\ttyrR"} else if($5 ~ "_myb") { print $0"\tMYB"}}' >> HGT_candidates_genomes.contigs.genes.bed
+##predicted starship related genes for HGT candidates
+cat HGT_candidates_starfish_wrapper_output/geneFinder_*/starfish.filt.gff | awk '{print $1"\t"$4"\t"$5"\t"$7"\t"$9}' | tr ';' '\t' | sed 's/Name=//g' | cut -f1,2,3,4,6 | awk '{if($5 ~ "_duf3723") {print $0"\tDUF3723"} else if($5 ~ "_tyr") { print $0"\ttyrR"} else if($5 ~ "_myb") { print $0"\tMYB"}}' >> HGT_candidates_genomes.contigs.genes.bed
+
+##NOT CURRENTLY USING
+##gene sequences from anntoation
+#grep CONTIG GENOME.gff | grep CDS | awk -F ";" '{print $1}' | sed 's/ID=cds-//g' | awk '{print $1"\t"$4"\t"$5"\t"$7"\t"$9"\tNA"}' >> HGT_candidates_genomes.contigs.genes.bed
+
+##FORTH AND FINAL PLOTTING FILE (bed file showing the position of the predicted element
+##this will be manually modified
+echo "contig;start;end;label" | tr ';' '\t' > HGT_candidates_genomes.contigs.starship.bed
+echo "GCA054574715_JBJHEB010000022.1;24000;44000" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
+
+```
+### Step 1f: Plotting alignments
+
+```R
+
+##can use R inside the stargraph conda environment to have all the libraries required, however it is just gggenomes, IRanges and ggnewscale
+library(IRanges)
+library(gggenomes)
+library(ggnewscale)
+
+##first feature
+##region to be plotted
+bed=read.csv("HGT_candidates_genomes.contigs.flank.bed", sep='\t', header=T)
+##just modify some headers for downstream handling
+##make another header, copy of contig, but called seq_id
+bed$seq_id = bed$contig
+##add another column, bin_id, which will be used by gggenomes to split up each element onto its own line (defaults to seq_id for clustering per row if not present)
+bed$bin_id = 1:nrow(bed) 
+##also length using the end position
+#bed$length = bed$end
+bed$length = bed$end - bed$start
+##add a column with label to be used in the plot (showing the actual region being aligned)
+bed$label= paste(bed$contig,":",bed$start,"-",bed$end, sep = "")
+
+##second feature
+##a bed file of just the Starship-like region coordinates i.e. the above bed file without the flanking regions
+SLRbed=read.csv("HGT_candidates_genomes.contigs.starship.bed", sep='\t', header=T)
+SLRbed$seq_id = SLRbed$contig
+SLRbed$length = SLRbed$end-SLRbed$start
+
+##third feature
+##a bed file with the genes annotated within the Starship-like regions (coordinates modified due to the flanking regions added)
+genes=read.csv("HGT_candidates_genomes.contigs.genes.bed", sep='\t', header=T)
+genes$seq_id = genes$contig
+genes$length= genes$end-genes$start
+genes$strand=genes$sense
+
+##fourth feature
+##the nucmer all-v-all alignment converted to paf format
+links=read_links("HGT_candidates_genomes.contigs.nucmer.paf")
+
+
+##the actual plot
+gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, map_length > 3000 & map_match/map_length > 0.8 & seq_id != seq_id2), adjacent_only = T) %>%
+    gggenomes::sync() %>%
+    gggenomes::pick() %>%
+    gggenomes::flip() +
+    geom_link(aes(fill=((map_match/map_length)*100)) ,colour="black", alpha=0.5, offset = 0.05, size=0.1 )+
+    scale_fill_gradientn(colours=c("grey100","grey75", "grey50"), name ="Identity (%)", labels=c(80,90,100), breaks=c(80,90,100), limits = c(80, 100))+
+    new_scale_fill()+
+    geom_seq(linewidth = 0.5)+
+    geom_feat(color="red", alpha=.6, linewidth=3)+
+    geom_gene(aes(fill=label), stroke=0.1, colour="black", shape = 3)+
+    geom_seq_label(aes(label=label))+
+    geom_seq_label(aes(label=genome), nudge_y = -.25)+
+    geom_feat_label(aes(label=starship), nudge_y = -.1, angle = 0, fontface = "italic")+
+    geom_gene_tag(aes(label=label), size = 2, nudge_y=0.1, check_overlap = FALSE)+
+    scale_fill_manual(values = c("red","blue","lightblue"), breaks=c("tyrR","MYB", "DUF3723"), name = NULL)+
+    theme(legend.position="top", legend.box = "horizontal")
 
 
 ```
+
+
+
+
