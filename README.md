@@ -71,6 +71,14 @@ done > assemblies_list.LR.txt
 stargraph.sh -a assemblies_list.LR.txt -t 16 -p Fcerealis -o stargraph_output -r starfish_wrapper_output/starfish.filt.SRGs_combined.gff -e  starfish_wrapper_output/starfish.elements.ann.FILTERED.feat
 
 ```
+Raw output for a Starship in SVA13
+
+<p>
+<img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/cluster2.svg" width=100%>
+</p>
+
+
+
 
 
 ### Step 1d: Run cargobay to find Horizontal gene transfer
