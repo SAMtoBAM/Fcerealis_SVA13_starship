@@ -223,7 +223,7 @@ cat starfish_wrapper_output/geneFinder_*/starfish.filt.gff | grep "$SVA13"  | aw
 ##predicted starship related genes for HGT candidates
 cat HGT_candidates_starfish_wrapper_output/geneFinder_*/starfish.filt.gff | awk '{print $1"\t"$4"\t"$5"\t"$7"\t"$9}' | tr ';' '\t' | sed 's/Name=//g' | cut -f1,2,3,4,6 | awk '{if($5 ~ "_duf3723") {print $0"\tDUF3723"} else if($5 ~ "_tyr") { print $0"\ttyrR"} else if($5 ~ "_myb") { print $0"\tMYB"}}' >> HGT_candidates_genomes.contigs.genes.bed
 
-##manually adding the identified Hemolysin III (AdipoR/Haemolysin-III-related (IPR004254)) and RHOD (Rhodanese-like domain (IPR001763)) proteins (based on ORF predictions and interpro searching)
+##manually adding the identified Haemolysin III (AdipoR/Haemolysin-III-related (IPR004254)) and RHOD (Rhodanese-like domain (IPR001763)) proteins (based on ORF predictions and interpro searching)
 ##likely involed in antagnosism and cyanide detoxification respectively and both associated with effectors
 echo "GCA054574715_JBJHEB010000022.1;35011;35700;-;HlyIII;HlyIII" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
 echo "GCA054574715_JBJHEB010000022.1;25998;26732;+;RHOD;RHOD" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
