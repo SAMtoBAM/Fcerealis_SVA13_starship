@@ -79,7 +79,8 @@ Clearly the edges is a little off but we can refine that later. Captin edge of p
 </p>
 
 
-### Step 1d: Run cargobay to find Horizontal gene transfer (currently not working as database is down)
+## Step 2: HGT evidence 
+### Step 2a: Run cargobay to find Horizontal gene transfer (currently not working as database is down)
 
 ```bash
 ##first need to create a metadata file that will tell cargobay which species each genome is and therefore not consider it HGT
@@ -93,7 +94,7 @@ cargobay.sh -t 2 -p Fcerealis -o cargobay_output -a stargraph_output/Fcerealis.a
 ```
 
 
-### Step 1e: Manually identify genomes with the SVA13 starship and generate alignments with Starship gene predictions
+### Step 2b: Manually identify genomes with the SVA13 starship and generate alignments with Starship gene predictions
 
 ```bash
 ##just want to extract the starship region pus some flank (can only go further downstream)
@@ -206,8 +207,8 @@ echo "${contig};${flankstart};${flankend}" | tr ';' '\t'
 done >> HGT_candidates_genomes.contigs.flank.bed
 
 ##SECOND PLOTTING FILE (alignment all vs all using nucmer converted to a paf file)
-##usually use a minmatch of 100 but reducing it to 25 as telomeric sequences are important here
-nucmer -t 16 --maxmatch --minmatch 25 --delta HGT_candidates_genomes.contigs.nucmer.delta HGT_candidates_genomes.contigs.fa HGT_candidates_genomes.contigs.fa
+##usually use a minmatch of 100 but removing it due to lower identity and telomeric sequences
+nucmer -t 16 --maxmatch --delta HGT_candidates_genomes.contigs.nucmer.delta HGT_candidates_genomes.contigs.fa HGT_candidates_genomes.contigs.fa
 paftools.js delta2paf HGT_candidates_genomes.contigs.nucmer.delta > HGT_candidates_genomes.contigs.nucmer.paf
 
 
@@ -227,10 +228,10 @@ cat HGT_candidates_starfish_wrapper_output/geneFinder_*/starfish.filt.gff | awk 
 ##this will be manually modified
 ##currently naming that starship what is what identified as from stargraph
 echo "contig;start;end;starship" | tr ';' '\t' > HGT_candidates_genomes.contigs.starship.bed
-echo "GCA054574715_JBJHEB010000022.1;19500;45000;GCA054574715_SLR2" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
+echo "GCA054574715_JBJHEB010000022.1;19250;45000;GCA054574715_SLR2" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
 
 ```
-### Step 1f: Plotting alignments
+### Step 2c: Plotting alignments
 
 ```R
 
@@ -276,24 +277,59 @@ links=read_links("HGT_candidates_genomes.contigs.nucmer.paf")
 ##the actual plot
 ##reordered for clarity and no filtering on alignments
 gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, seq_id != seq_id2), adjacent_only = T) %>%
+    gggenomes::flip(1) %>%
     gggenomes::sync() %>%
-    gggenomes::pick(4,1,3,2) %>%
-    gggenomes::flip() +
+    gggenomes::pick(4,1,3,2) +
     geom_link(aes(fill=((map_match/map_length)*100)) ,colour="black", alpha=0.5, offset = 0.05, size=0.1 )+
-    scale_fill_gradientn(colours=c("grey100","grey75", "grey50"), name ="Identity (%)", labels=c(80,90,100), breaks=c(80,90,100), limits = c(80, 100))+
+    scale_fill_gradientn(colours=c("grey100","grey75", "grey50"), name ="Identity (%)", labels=c(70,80,90,100), breaks=c(70,80,90,100), limits = c(70, 100))+
     new_scale_fill()+
     geom_seq(linewidth = 0.5)+
     geom_feat(color="red", alpha=.6, linewidth=3)+
     geom_gene(aes(fill=label), stroke=0.1, colour="black", shape = 3)+
     geom_seq_label(aes(label=label))+
     geom_seq_label(aes(label=genome), nudge_y = -.25)+
-    geom_feat_label(aes(label=starship), nudge_y = -.1, angle = 0, fontface = "italic")+
+    geom_feat_label(aes(label=starship), nudge_y = -.2, siz=4, angle = 0, fontface = "italic")+
     geom_gene_tag(aes(label=label), size = 2, nudge_y=0.1, check_overlap = FALSE)+
     scale_fill_manual(values = c("red","blue","lightblue"), breaks=c("tyrR","MYB", "DUF3723"), name = NULL)+
     theme(legend.position="top", legend.box = "horizontal")
 
+```
+Best candidate as below is the F. culmorum assembly GCA_052570865.1, due to large unaligned flanks and higher identity
+<p>
+<img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/SVA13_SLR2_HGT_alignment.svg" width=100%>
+</p>
+
+
+
+## Step 2e: Phylogeny with HGT candidates
+
+Can generate a quick phylogeny using all the F. cerealis genomes, the HGT candidate genomes and some other reference Fusarium species assemblies <br/>
+To do this we will quickly just use a k-mer based tree
+
+```bash
+
+mkdir assemblies_for_phylogeny
+
+candidates="GCA_052570865.1 GCA_022627095.1 GCA_019055085.1"
+
+mkdir HGT_candidates_genomes
+
+##download the assembly and protein dataset then rename it etc
+datasets download genome accession ${candidates}
+unzip ncbi_dataset.zip
+rm ncbi_dataset.zip
+##rename them as just the ncbi GCA assession and rename the contig headers with the genome name 
+ls ncbi_dataset/data/ | grep -v json | while read genome
+do
+    genome2=$( echo $genome | sed 's/_//' | awk -F "." '{print $1}')
+    cat ncbi_dataset/data/$genome/$genome*.fna | sed "s/>/>${genome2}_/g" | awk -F " " '{print $1}' | awk '{if($0 ~ ">") {print} else {print toupper($0)}}' > HGT_candidates_genomes/$genome2.fa
+done
+##clean up
+rm -r ncbi_dataset/ md5sum.txt README.md 
+
 
 ```
+
 
 
 
