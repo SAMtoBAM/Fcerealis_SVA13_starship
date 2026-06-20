@@ -364,6 +364,8 @@ sourmash compare signatures/*.sig -k 21 --distance-matrix --csv kmer_distance.ma
 
 ```
 
+Now plot the distance matrix as a midrooted NJ tree in R with a red tip for SVA13 and blue tips for the HGT candidates
+
 ```R
 
 library(ape)
