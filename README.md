@@ -419,7 +419,7 @@ And the two others are very far away, closest to F. equiseti
 <img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/SVA13_SLR2_HGT_phylogeny.svg" width=100%>
 </p>
 
-
-
+Notably this element cannot be comfirmed in F. culmorum using the other culmorums as it appears to be inserted in a region not present in other assembies or the same <br/>
+Might be able to add GCA_016952355.1 chromosome2/CP064748 around 7025000 kb
 
 
