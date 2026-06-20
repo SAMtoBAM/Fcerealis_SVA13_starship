@@ -190,6 +190,14 @@ flank=30000
 samtools faidx HGT_candidates_genomes.fa
 
 echo "contig;start;end" | tr ';' '\t' > HGT_candidates_genomes.contigs.flank.bed
+##add the SVA13 region
+grep $SVA13 stargraph_output/Fcerealis.starships_SLRs.bed | cut -f1-3 | while read -r contig start end
+do
+flankstart=$( echo $start | awk -v flank="$flank" '{if(($1-flank) < 0) {print "0"} else {print $1-flank}}' )
+flankend=$( grep $contig stargraph_output/Fcerealis.assemblies.fa.gz.fai | cut -f2 | awk -v end="$end" -v flank="$flank" '{if((end+flank) > $1){print $1} else {print end+flank}}' )
+echo "${contig};${flankstart};${flankend}" | tr ';' '\t'
+done >> HGT_candidates_genomes.contigs.flank.bed
+##add the candidates
 tail -n+2 HGT_candidates_genomes.contigs.bed | cut -f1-3 | while read -r contig start end
 do
 flankstart=$( echo $start | awk -v flank="$flank" '{if(($1-flank) < 0) {print "0"} else {print $1-flank}}' )
@@ -217,8 +225,9 @@ cat HGT_candidates_starfish_wrapper_output/geneFinder_*/starfish.filt.gff | awk 
 
 ##FORTH AND FINAL PLOTTING FILE (bed file showing the position of the predicted element
 ##this will be manually modified
-echo "contig;start;end;label" | tr ';' '\t' > HGT_candidates_genomes.contigs.starship.bed
-echo "GCA054574715_JBJHEB010000022.1;24000;44000" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
+##currently naming that starship what is what identified as from stargraph
+echo "contig;start;end;starship" | tr ';' '\t' > HGT_candidates_genomes.contigs.starship.bed
+echo "GCA054574715_JBJHEB010000022.1;24000;44000;GCA054574715_SLR2" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
 
 ```
 ### Step 1f: Plotting alignments
@@ -243,6 +252,8 @@ bed$bin_id = 1:nrow(bed)
 bed$length = bed$end - bed$start
 ##add a column with label to be used in the plot (showing the actual region being aligned)
 bed$label= paste(bed$contig,":",bed$start,"-",bed$end, sep = "")
+##add another column that is just the genome accession
+bed$genome <- sub("_.*", "", bed$contig)
 
 ##second feature
 ##a bed file of just the Starship-like region coordinates i.e. the above bed file without the flanking regions
@@ -263,9 +274,10 @@ links=read_links("HGT_candidates_genomes.contigs.nucmer.paf")
 
 
 ##the actual plot
-gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, map_length > 3000 & map_match/map_length > 0.8 & seq_id != seq_id2), adjacent_only = T) %>%
+##reordered for clarity and no filtering on alignments
+gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, seq_id != seq_id2), adjacent_only = T) %>%
     gggenomes::sync() %>%
-    gggenomes::pick() %>%
+    gggenomes::pick(4,1,3,2) %>%
     gggenomes::flip() +
     geom_link(aes(fill=((map_match/map_length)*100)) ,colour="black", alpha=0.5, offset = 0.05, size=0.1 )+
     scale_fill_gradientn(colours=c("grey100","grey75", "grey50"), name ="Identity (%)", labels=c(80,90,100), breaks=c(80,90,100), limits = c(80, 100))+
