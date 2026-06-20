@@ -223,6 +223,11 @@ cat starfish_wrapper_output/geneFinder_*/starfish.filt.gff | grep "$SVA13"  | aw
 ##predicted starship related genes for HGT candidates
 cat HGT_candidates_starfish_wrapper_output/geneFinder_*/starfish.filt.gff | awk '{print $1"\t"$4"\t"$5"\t"$7"\t"$9}' | tr ';' '\t' | sed 's/Name=//g' | cut -f1,2,3,4,6 | awk '{if($5 ~ "_duf3723") {print $0"\tDUF3723"} else if($5 ~ "_tyr") { print $0"\ttyrR"} else if($5 ~ "_myb") { print $0"\tMYB"}}' >> HGT_candidates_genomes.contigs.genes.bed
 
+##manually adding the identified Hemolysin III (AdipoR/Haemolysin-III-related (IPR004254)) and RHOD (Rhodanese-like domain (IPR001763)) proteins (based on ORF predictions and interpro searching)
+##likely involed in antagnosism and cyanide detoxification respectively and both associated with effectors
+echo "GCA054574715_JBJHEB010000022.1;35011;35700;-;HlyIII;HlyIII" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
+echo "GCA054574715_JBJHEB010000022.1;25998;26732;+;RHOD;RHOD" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed	
+
 ##NOT CURRENTLY USING
 ##gene sequences from anntoation
 #grep CONTIG GENOME.gff | grep CDS | awk -F ";" '{print $1}' | sed 's/ID=cds-//g' | awk '{print $1"\t"$4"\t"$5"\t"$7"\t"$9"\tNA"}' >> HGT_candidates_genomes.contigs.genes.bed
@@ -293,7 +298,7 @@ gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, seq_id != seq_
     geom_seq_label(aes(label=genome), nudge_y = -.25)+
     geom_feat_label(aes(label=starship), nudge_y = -.2, siz=4, angle = 0, fontface = "italic")+
     geom_gene_tag(aes(label=label), size = 2, nudge_y=0.1, check_overlap = FALSE)+
-    scale_fill_manual(values = c("red","blue","lightblue"), breaks=c("tyrR","MYB", "DUF3723"), name = NULL)+
+    scale_fill_manual(values = c("red","blue","lightblue","orange", "orange"), breaks=c("tyrR","MYB", "DUF3723", "HlyIII", "RHOD"), name = NULL)+
     theme(legend.position="top", legend.box = "horizontal")
 
 ```
