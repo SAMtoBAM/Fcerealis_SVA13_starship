@@ -410,6 +410,12 @@ ggtree(tree, size=0.2) +
     geom_tippoint(aes(subset = label %in% HGT), color = "blue", size = 3 )
 
 ```
+We see that the best aligned clusters with other F. culmorum assemblies <br/>
+And the two others are very far away, closest to F. equiseti
+
+<p>
+<img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/SVA13_SLR2_HGT_phylogeny.svg" width=100%>
+</p>
 
 
 
