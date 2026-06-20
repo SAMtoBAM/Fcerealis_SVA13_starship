@@ -13,7 +13,10 @@ Other long-read assembly is F23-4.4 (GCA_054553065.1)
 
 conda create -n starg samtobam::stargraph
 conda activate starg
+##will just add some R packages for the phylogeny too
+conda install bioconda::bioconductor-ggtree conda-forge::r-ape conda-forge::r-phangorn conda-forge::r-ggplot2
 
+##create and move into directory for analysis
 mkdir Fcerealis_starships && cd Fcerealis_starships
 
 ```
@@ -303,16 +306,25 @@ Best candidate as below is the F. culmorum assembly GCA_052570865.1, due to larg
 
 ## Step 2e: Phylogeny with HGT candidates
 
-Can generate a quick phylogeny using all the F. cerealis genomes, the HGT candidate genomes and some other reference Fusarium species assemblies <br/>
-To do this we will quickly just use a k-mer based tree
+Can generate a quick k-mer based phylogeny using all the F. cerealis genomes, the HGT candidate genomes and some other reference Fusarium species assemblies <br/>
+These other reference genomes will include several well known species and several from the sambucinum complex <br/>
+Reference genomes used: <br/>
+F. oxysporum Fo47 (GCA_013085055.1)  <br/>
+F. culmorum Class2-1B (GCA_016952355.1)  <br/>
+F. poae DAOMC252244 (GCA_019609905.1)  <br/>
+F. sambucinum potato_lamoka (GCA_050947815.1)  <br/>
+F. graminearum PH-1/NRRL31084 (GCA_000240135.3)  <br/>
+F. pseudograminearum CS3096 (GCA_000303195.2) <br/>
+F. verticillioides 7600 (GCA_000149555.1) <br/>
+F. asiaticum KCTC16664 (GCA_025258505.1) <br/>
+F. vorosii RN1 (GCA_037179535.1) <br/>
+F. boothii CBS316.73 (GCA_017656985.1) <br/>
 
 ```bash
 
+candidates="GCA_013085055.1 GCA_016952355.1 GCA_019609905.1 GCA_050947815.1 GCA_000240135.3 GCA_000303195.2 GCA_000149555.1 GCA_025258505.1 GCA_037179535.1 GCA_017656985.1"
+
 mkdir assemblies_for_phylogeny
-
-candidates="GCA_052570865.1 GCA_022627095.1 GCA_019055085.1"
-
-mkdir HGT_candidates_genomes
 
 ##download the assembly and protein dataset then rename it etc
 datasets download genome accession ${candidates}
@@ -322,11 +334,72 @@ rm ncbi_dataset.zip
 ls ncbi_dataset/data/ | grep -v json | while read genome
 do
     genome2=$( echo $genome | sed 's/_//' | awk -F "." '{print $1}')
-    cat ncbi_dataset/data/$genome/$genome*.fna | sed "s/>/>${genome2}_/g" | awk -F " " '{print $1}' | awk '{if($0 ~ ">") {print} else {print toupper($0)}}' > HGT_candidates_genomes/$genome2.fa
+    cat ncbi_dataset/data/$genome/$genome*.fna | sed "s/>/>${genome2}_/g" | awk -F " " '{print $1}' | awk '{if($0 ~ ">") {print} else {print toupper($0)}}' > assemblies_for_phylogeny/$genome2.fa
 done
 ##clean up
 rm -r ncbi_dataset/ md5sum.txt README.md 
 
+
+##gernerate k-mer signatures for each assembly
+mkdir signatures
+
+for genome in $( ls */*.fa | grep -v stargraph_output ); do
+    sourmash sketch dna \
+        "$genome" \
+        -p k=21,scaled=1000 \
+        --name $(basename ${genome%.*}) \
+        -o signatures/$(basename ${genome%.*}).sig
+done
+
+##compare the k-mer signatures to generate a similarity matrix
+sourmash compare signatures/*.sig     -k 21 --distance-matrix --csv kmer_distance.mat
+
+```
+
+```R
+
+library(ape)
+library(phangorn)
+library(ggtree)
+library(ggplot2)
+
+m <- read.csv(
+    "kmer_distance.mat",
+    header = TRUE,
+    check.names = FALSE
+)
+
+##get the header and add it to the first column 
+taxa <- colnames(m)
+m <- as.matrix(m)
+rownames(m) <- taxa
+colnames(m) <- taxa
+
+# ensure numeric (otherwise get some errors with 0 values)
+mode(m) <- "numeric"
+
+# distances already
+d <- as.dist(m)
+
+# build tree
+tree <- nj(d)
+
+##midroot the tree
+tree <- midpoint(tree)
+
+##set a list of the genomes with putative HGT so we can highlight the tips in the tree
+SVA13=c("GCA054574715")
+HGT=c("GCA052570865","GCA022627095","GCA019055085")
+
+##plot with ggtree
+ggtree(tree, size=0.2) +
+    guides(fill = "none")+
+    geom_tiplab(size=12, as_ylab = TRUE, align = T)+
+    scale_fill_viridis_b()+
+    geom_rootedge(rootedge = 0.01, linewidth=0.2)+
+    geom_treescale(x=0.05, y=12, width=0.05, color='black')+
+    geom_tippoint(aes(subset = label %in% SVA13), color = "red", size = 3)+
+    geom_tippoint(aes(subset = label %in% HGT), color = "blue", size = 3 )
 
 ```
 
