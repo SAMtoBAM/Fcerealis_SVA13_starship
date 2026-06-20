@@ -206,8 +206,8 @@ echo "${contig};${flankstart};${flankend}" | tr ';' '\t'
 done >> HGT_candidates_genomes.contigs.flank.bed
 
 ##SECOND PLOTTING FILE (alignment all vs all using nucmer converted to a paf file)
-##usually use a minmatch of 100 but reducing it to 50 as telomeric sequences are important here
-nucmer -t 16 --maxmatch --minmatch 50 --delta HGT_candidates_genomes.contigs.nucmer.delta HGT_candidates_genomes.contigs.fa HGT_candidates_genomes.contigs.fa
+##usually use a minmatch of 100 but reducing it to 25 as telomeric sequences are important here
+nucmer -t 16 --maxmatch --minmatch 25 --delta HGT_candidates_genomes.contigs.nucmer.delta HGT_candidates_genomes.contigs.fa HGT_candidates_genomes.contigs.fa
 paftools.js delta2paf HGT_candidates_genomes.contigs.nucmer.delta > HGT_candidates_genomes.contigs.nucmer.paf
 
 
@@ -227,7 +227,7 @@ cat HGT_candidates_starfish_wrapper_output/geneFinder_*/starfish.filt.gff | awk 
 ##this will be manually modified
 ##currently naming that starship what is what identified as from stargraph
 echo "contig;start;end;starship" | tr ';' '\t' > HGT_candidates_genomes.contigs.starship.bed
-echo "GCA054574715_JBJHEB010000022.1;24000;44000;GCA054574715_SLR2" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
+echo "GCA054574715_JBJHEB010000022.1;19500;45000;GCA054574715_SLR2" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
 
 ```
 ### Step 1f: Plotting alignments
