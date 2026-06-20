@@ -310,7 +310,9 @@ Can generate a quick k-mer based phylogeny using all the F. cerealis genomes, th
 These other reference genomes will include several well known species and several from the sambucinum complex <br/>
 Reference genomes used: <br/>
 F. oxysporum Fo47 (GCA_013085055.1)  <br/>
+F. oxysporum Fo5176 (GCA_030345115.2) <br/>
 F. culmorum Class2-1B (GCA_016952355.1)  <br/>
+F. culmorum PV (GCA_003033665.1) <br/>
 F. poae DAOMC252244 (GCA_019609905.1)  <br/>
 F. sambucinum potato_lamoka (GCA_050947815.1)  <br/>
 F. graminearum PH-1/NRRL31084 (GCA_000240135.3)  <br/>
@@ -319,10 +321,16 @@ F. verticillioides 7600 (GCA_000149555.1) <br/>
 F. asiaticum KCTC16664 (GCA_025258505.1) <br/>
 F. vorosii RN1 (GCA_037179535.1) <br/>
 F. boothii CBS316.73 (GCA_017656985.1) <br/>
+F. equiseti S.F-5 (GCA_052857265.1) <br/>
+F. venenatum MPI-CAGE-CH-0201 (GCA_020744135.1) <br/>
+F. sporotrichioides S17/16 (GCA_019054645.1) <br/>
+F. tricinctum MsR-QD66 (GCA_050859235.1) <br/>
+F. chlamydosporum IraGTOF6 (GCA_047716405.1) <br/>
+F. austroamericanum CBS110246 (GCA_017657035.1) <br/>
 
 ```bash
 
-candidates="GCA_013085055.1 GCA_016952355.1 GCA_019609905.1 GCA_050947815.1 GCA_000240135.3 GCA_000303195.2 GCA_000149555.1 GCA_025258505.1 GCA_037179535.1 GCA_017656985.1"
+candidates="GCA_013085055.1 GCA_016952355.1 GCA_003033665.1 GCA_019609905.1 GCA_050947815.1 GCA_000240135.3 GCA_000303195.2 GCA_000149555.1 GCA_025258505.1 GCA_037179535.1 GCA_017656985.1 GCA_052857265.1 GCA_020744135.1 GCA_019054645.1 GCA_050859235.1 GCA_047716405.1 GCA_017657035.1"
 
 mkdir assemblies_for_phylogeny
 
@@ -352,7 +360,7 @@ for genome in $( ls */*.fa | grep -v stargraph_output ); do
 done
 
 ##compare the k-mer signatures to generate a similarity matrix
-sourmash compare signatures/*.sig     -k 21 --distance-matrix --csv kmer_distance.mat
+sourmash compare signatures/*.sig -k 21 --distance-matrix --csv kmer_distance.mat
 
 ```
 
