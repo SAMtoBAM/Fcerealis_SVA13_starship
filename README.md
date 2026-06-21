@@ -236,9 +236,11 @@ echo "GCA054574715_JBJHEB010000022.1;21040;21594;+;PLP;PLP" | tr ';' '\t' >> HGT
 
 ##FORTH AND FINAL PLOTTING FILE (bed file showing the position of the predicted element
 ##the edges were manually modified using the alignments with HGT candidates
+#SVA13 starship = GCA054574715_JBJHEB010000022.1:19376-44853
 ##currently naming that starship what is what identified as from stargraph
 echo "contig;start;end;starship" | tr ';' '\t' > HGT_candidates_genomes.contigs.starship.bed
 echo "GCA054574715_JBJHEB010000022.1;19376;44853;GCA054574715_SLR2" | tr ';' '\t' >> HGT_candidates_genomes.contigs.starship.bed
+
 
 ```
 ### Step 2c: Plotting alignments
