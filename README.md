@@ -231,6 +231,8 @@ echo "GCA054574715_JBJHEB010000022.1;25998;26732;+;RHOD;RHOD" | tr ';' '\t' >> H
 echo "GCA054574715_JBJHEB010000022.1;37795;38166;-;putative-effector;putative-effector" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
 echo "GCA054574715_JBJHEB010000022.1;25654;26037;-;putative-effector;putative-effector" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
 echo "GCA054574715_JBJHEB010000022.1;21708;22019;+;putative-effector;putative-effector" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
+##manually identified protein with a 2EXR domain found in effectors
+echo "GCA054574715_JBJHEB010000022.1;37679;38683;+;2EXR;2EXR" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed
 ##and a Patatin-like phospholipase protein (as found often in Starships)
 echo "GCA054574715_JBJHEB010000022.1;21040;21594;+;PLP;PLP" | tr ';' '\t' >> HGT_candidates_genomes.contigs.genes.bed	
 	
@@ -306,7 +308,7 @@ gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, seq_id != seq_
     geom_seq_label(aes(label=genome), nudge_y = -.25)+
     geom_feat_label(aes(label=starship), nudge_y = -.2, siz=4, angle = 0, fontface = "italic")+
     geom_gene_tag(aes(label=label), size = 2, nudge_y=0.1, check_overlap = FALSE)+
-    scale_fill_manual(values = c("red","blue","lightblue","orange", "orange", "orange", "grey"), breaks=c("tyrR","MYB", "DUF3723", "HlyIII", "RHOD","putative-effector", "PLP"), name = NULL)+
+    scale_fill_manual(values = c("red","blue","lightblue","orange", "orange","orange", "orange", "grey"), breaks=c("tyrR","MYB", "DUF3723", "HlyIII", "RHOD","putative-effector","2EXR", "PLP"), name = NULL)+
     theme(legend.position="top", legend.box = "horizontal")
 
 ```
