@@ -1,5 +1,5 @@
 # Fcerealis_SVA13_starship
-Repository for the analysis of Starships in the Fusarium cerealis strain SVA13 genome
+Repository for the analysis of _Starships_ in the _Fusarium cerealis_ strain SVA13 genome
 
 Using the assembly of SVA13 made publicly available for ease of reproducibility <br/>
 SVA13 = GCA_054574715.1 <br/>
@@ -22,7 +22,7 @@ mkdir Fcerealis_starships && cd Fcerealis_starships
 ```
 
 
-## Step 1: Identify _Starships_ and SLRs in all public Fusarium cerealis assemblies; including 2 long-read assemblies for SVA13 and F-23-4.4 (F2344)
+## Step 1: Identify _Starships_ and SLRs in all public _Fusarium cerealis_ assemblies; including 2 long-read assemblies for SVA13 and F-23-4.4 (F2344)
 ### Step 1a: Download all assemblies and rename
 
 ```bash
@@ -43,7 +43,7 @@ done
 rm -r ncbi_dataset/ md5sum.txt README.md 
 ```
 
-### Step 1b: run starfish_wrapper (mainly just to get the de-novo Starship gene annotations
+### Step 1b: Run starfish_wrapper (mainly just to get the _de-novo_ _Starship_ gene annotations)
 
 
 ```bash
@@ -74,8 +74,8 @@ done > assemblies_list.LR.txt
 stargraph.sh -a assemblies_list.LR.txt -t 16 -p Fcerealis -o stargraph_output -r starfish_wrapper_output/starfish.filt.SRGs_combined.gff -e  starfish_wrapper_output/starfish.elements.ann.FILTERED.feat
 
 ```
-Raw output for a Starship in SVA13 <br/>
-Clearly the edges is a little off but we can refine that later. Captin edge of predicted element extends over aligned region, and other end extends over ~200bp of telomeric sequences. Also as we will see below the 20kb prior to the telomeres is likely not Starship Material neither.
+Raw output for a _Starship_ in SVA13 <br/>
+Clearly the edges is a little off but we can refine that later. Captain edge of predicted element extends over aligned region, and other end extends over ~200bp of telomeric sequences. Also as we will see below the 20kb prior to the telomeres is likely not _Starship_ Material neither.
 
 <p>
 <img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/cluster2.svg" width=100%>
@@ -83,7 +83,7 @@ Clearly the edges is a little off but we can refine that later. Captin edge of p
 
 
 ## Step 2: HGT evidence 
-### Step 2a: Run cargobay to find Horizontal gene transfer (currently not working as database is down)
+### Step 2a: Run cargobay to find Horizontal Gene Transfer (currently not working as database is down)
 
 ```bash
 ##first need to create a metadata file that will tell cargobay which species each genome is and therefore not consider it HGT
@@ -97,7 +97,7 @@ cargobay.sh -t 2 -p Fcerealis -o cargobay_output -a stargraph_output/Fcerealis.a
 ```
 
 
-### Step 2b: Manually identify genomes with the SVA13 starship and generate alignments with Starship gene predictions
+### Step 2b: Manually identify genomes with the SVA13 starship and generate alignments with _Starship_ gene predictions
 
 ```bash
 ##just want to extract the starship region pus some flank (can only go further downstream)
@@ -105,9 +105,9 @@ samtools faidx stargraph_output/Fcerealis.assemblies.fa.gz $( grep $SVA13 stargr
 ```
 
 Based on BLASTing NCBI we can find this element in 3 genomes of other species: <br/>
-Fusarium culmorum = GCA_052570865.1 <br/>
-Fusarium sp. = GCA_022627095.1 <br/>
-Fusarium equiseti = GCA_019055085.1
+_Fusarium culmorum_ = GCA_052570865.1 <br/>
+_Fusarium sp._ = GCA_022627095.1 <br/>
+_Fusarium equiseti_ = GCA_019055085.1
 
 ```bash
 
@@ -312,7 +312,7 @@ gggenomes(genes=genes, seqs=bed, feat=SLRbed, links=subset(links, seq_id != seq_
     theme(legend.position="top", legend.box = "horizontal")
 
 ```
-Best candidate as below is the F. culmorum assembly GCA_052570865.1, due to large unaligned flanks and higher identity
+Best candidate as below is the _F. culmorum_ assembly GCA_052570865.1, due to large unaligned flanks and higher identity
 <p>
 <img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/SVA13_SLR2_HGT_alignment.svg" width=100%>
 </p>
@@ -321,27 +321,27 @@ Best candidate as below is the F. culmorum assembly GCA_052570865.1, due to larg
 
 ## Step 2e: Phylogeny with HGT candidates
 
-Can generate a quick k-mer based phylogeny using all the F. cerealis genomes, the HGT candidate genomes and some other reference Fusarium species assemblies <br/>
+Can generate a quick k-mer based phylogeny using all the _F. cerealis_ genomes, the HGT candidate genomes and some other reference Fusarium species assemblies <br/>
 These other reference genomes will include several well known species and several from the sambucinum complex <br/>
 Reference genomes used: <br/>
-F. oxysporum Fo47 (GCA_013085055.1)  <br/>
-F. oxysporum Fo5176 (GCA_030345115.2) <br/>
-F. culmorum Class2-1B (GCA_016952355.1)  <br/>
-F. culmorum PV (GCA_003033665.1) <br/>
-F. poae DAOMC252244 (GCA_019609905.1)  <br/>
-F. sambucinum potato_lamoka (GCA_050947815.1)  <br/>
-F. graminearum PH-1/NRRL31084 (GCA_000240135.3)  <br/>
-F. pseudograminearum CS3096 (GCA_000303195.2) <br/>
-F. verticillioides 7600 (GCA_000149555.1) <br/>
-F. asiaticum KCTC16664 (GCA_025258505.1) <br/>
-F. vorosii RN1 (GCA_037179535.1) <br/>
-F. boothii CBS316.73 (GCA_017656985.1) <br/>
-F. equiseti S.F-5 (GCA_052857265.1) <br/>
-F. venenatum MPI-CAGE-CH-0201 (GCA_020744135.1) <br/>
-F. sporotrichioides S17/16 (GCA_019054645.1) <br/>
-F. tricinctum MsR-QD66 (GCA_050859235.1) <br/>
-F. chlamydosporum IraGTOF6 (GCA_047716405.1) <br/>
-F. austroamericanum CBS110246 (GCA_017657035.1) <br/>
+_F. oxysporum_ Fo47 (GCA_013085055.1)  <br/>
+_F. oxysporum_ Fo5176 (GCA_030345115.2) <br/>
+_F. culmorum_ Class2-1B (GCA_016952355.1)  <br/>
+_F. culmorum_ PV (GCA_003033665.1) <br/>
+_F. poae_ DAOMC252244 (GCA_019609905.1)  <br/>
+_F. sambucinum_ potato_lamoka (GCA_050947815.1)  <br/>
+_F. graminearum_ PH-1/NRRL31084 (GCA_000240135.3)  <br/>
+_F. pseudograminearum_ CS3096 (GCA_000303195.2) <br/>
+_F. verticillioides_ 7600 (GCA_000149555.1) <br/>
+_F. asiaticum_ KCTC16664 (GCA_025258505.1) <br/>
+_F. vorosii_ RN1 (GCA_037179535.1) <br/>
+_F. boothii_ CBS316.73 (GCA_017656985.1) <br/>
+_F. equiseti_ S.F-5 (GCA_052857265.1) <br/>
+_F. venenatum_ MPI-CAGE-CH-0201 (GCA_020744135.1) <br/>
+_F. sporotrichioides_ S17/16 (GCA_019054645.1) <br/>
+_F. tricinctum_ MsR-QD66 (GCA_050859235.1) <br/>
+_F. chlamydosporum_ IraGTOF6 (GCA_047716405.1) <br/>
+_F. austroamericanum_ CBS110246 (GCA_017657035.1) <br/>
 
 ```bash
 
@@ -427,14 +427,14 @@ ggtree(tree, size=0.2) +
     geom_tippoint(aes(subset = label %in% HGT), color = "blue", size = 3 )
 
 ```
-We see that the best aligned clusters with other F. culmorum assemblies <br/>
-And the two others are very far away, closest to F. equiseti
+We see that the best aligned clusters with other _F. culmorum_ assemblies <br/>
+And the two others are very far away, closest to _F. equiseti_
 
 <p>
 <img src="https://github.com/SAMtoBAM/Fcerealis_SVA13_starship/blob/main/images/SVA13_SLR2_HGT_phylogeny.svg" width=100%>
 </p>
 
-Notably this element cannot be comfirmed in F. culmorum using the other culmorums as it appears to be inserted in a region not present in other assembies or the same <br/>
+Notably this element cannot be comfirmed in _F. culmorum_ using the other culmorums as it appears to be inserted in a region not present in other assembies or the same <br/>
 Might be able to add GCA_016952355.1 chromosome2/CP064748 around 7025000 kb
 
 Also likely DR = TTACAG <br/>
